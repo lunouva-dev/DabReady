@@ -2,3 +2,8 @@ node_modules
 dist
 .vite
 *.log
+.next
+.vinext
+.wrangler
+outputs
+work
