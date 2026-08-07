@@ -1,0 +1,17 @@
+{
+  "name": "DabReady",
+  "short_name": "DabReady",
+  "description": "A simple heat and cooldown timer for your personal setup.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101310",
+  "theme_color": "#101310",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
