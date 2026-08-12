@@ -254,6 +254,99 @@ h1 {
   font-size: 13px;
 }
 
+.checkin-card {
+  width: min(100%, 560px);
+  margin: 28px auto 0;
+  padding: 24px;
+  border: 1px solid #4d5b3c;
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(42, 50, 36, .96), rgba(22, 27, 21, .98));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .32);
+  text-align: left;
+}
+
+.checkin-card[hidden] { display: none; }
+.checkin-card h2 { margin-bottom: 16px; font-size: 26px; }
+.checkin-card.shared { border-color: var(--acid); }
+
+.vibe-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.vibe-options button {
+  min-height: 46px;
+  padding: 8px;
+  border: 1px solid #3a4336;
+  border-radius: 13px;
+  color: #aeb7a8;
+  background: #111511;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vibe-options button[aria-pressed="true"] { border-color: var(--acid); color: #111510; background: var(--acid); }
+
+.vibe-note { display: block; margin-top: 18px; color: #c5ccc0; font-size: 12px; font-weight: 700; }
+.vibe-note > span { float: right; color: #727c6e; font-size: 10px; font-weight: 500; }
+.vibe-note textarea { display: block; width: 100%; min-height: 74px; margin-top: 8px; padding: 12px 14px; resize: vertical; border: 1px solid #3a4336; border-radius: 13px; outline: none; color: #f3f5ed; background: #101310; }
+.vibe-note textarea:focus { border-color: var(--acid); box-shadow: 0 0 0 3px rgba(215, 255, 85, .08); }
+.checkin-actions { display: flex; gap: 10px; margin-top: 14px; }
+.checkin-actions .primary-action { flex: 1; min-height: 50px; }
+.checkin-message { min-height: 18px; margin: 10px 0 0; color: var(--acid); font-size: 11px; text-align: center; }
+
+.community-panel {
+  margin-top: clamp(54px, 10vw, 86px);
+  padding: clamp(20px, 5vw, 30px);
+  border: 1px solid #384132;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 90% 0, rgba(118, 223, 255, .07), transparent 18rem),
+    rgba(24, 29, 24, .92);
+}
+
+.community-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.community-heading h2 { max-width: 480px; font-size: clamp(24px, 5vw, 32px); }
+.active-count { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: 38px; padding: 0 12px; border: 1px solid #3e4938; border-radius: 999px; color: #97a292; background: #121612; font-size: 11px; }
+.active-count strong { color: #f4f6ec; font-size: 14px; }
+.live-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--acid); box-shadow: 0 0 0 0 rgba(215, 255, 85, .45); animation: live-ping 1.8s ease-out infinite; }
+
+.active-strip { display: flex; gap: 9px; margin: 24px -4px 0; padding: 4px; overflow-x: auto; scrollbar-width: thin; }
+.active-person { display: grid; grid-template-columns: auto 1fr; flex: 0 0 196px; align-items: center; gap: 10px; min-height: 67px; padding: 11px; border: 1px solid #394136; border-radius: 16px; background: #111511; }
+.active-person small { grid-column: 2; margin-top: -16px; color: #657061; font-size: 9px; }
+.active-person strong, .active-person span { display: block; }
+.active-person strong { overflow: hidden; color: #e7eae2; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.active-person div span { margin-top: 3px; color: #8c9687; font-size: 10px; }
+.active-person.heating { border-color: rgba(255, 138, 61, .35); }
+.active-person.cooling { border-color: rgba(118, 223, 255, .32); }
+
+.person-avatar { display: grid !important; place-items: center; width: 38px; height: 38px; border-radius: 13px; color: #111510; background: var(--acid); font: 800 14px/1 "Manrope", sans-serif; }
+.active-person.heating .person-avatar { background: var(--orange); }
+.active-person.cooling .person-avatar { background: #76dfff; }
+
+.feed-heading { display: flex; align-items: baseline; justify-content: space-between; margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
+.feed-heading h3 { margin: 0; font: 700 16px/1 "Manrope", sans-serif; }
+.feed-heading span { color: #697365; font-size: 10px; }
+.community-feed { display: grid; gap: 10px; margin-top: 12px; }
+.community-empty { width: 100%; margin: 0; padding: 18px; border: 1px dashed #353d32; border-radius: 15px; color: #727c6e; font-size: 12px; text-align: center; }
+.feed-card { padding: 14px 15px; border: 1px solid #343c31; border-radius: 17px; background: #111511; }
+.feed-top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; }
+.feed-top > div strong, .feed-top > div span { display: block; }
+.feed-top strong { color: #e8ebe3; font-size: 12px; }
+.feed-top > div span { margin-top: 3px; color: #697365; font-size: 9px; }
+.vibe-badge { padding: 6px 9px; border-radius: 999px; color: #111510; background: var(--acid); font-size: 10px; font-weight: 800; }
+.vibe-too-hot { background: var(--orange); }
+.vibe-too-cool { background: #76dfff; }
+.feed-note { margin: 12px 0 9px 48px; color: #d4d9ce; font-size: 14px; line-height: 1.45; }
+.feed-meta { display: block; margin-left: 48px; color: #687164; font-size: 9px; }
+
+@keyframes live-ping {
+  70% { box-shadow: 0 0 0 7px rgba(215, 255, 85, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(215, 255, 85, 0); }
+}
+
 .settings-panel {
   margin-top: clamp(54px, 10vw, 86px);
   padding: clamp(20px, 5vw, 30px);
@@ -534,6 +627,8 @@ body[data-phase="ready"] .particle-three { animation-delay: -.7s; }
   .settings-heading .eyebrow { margin-bottom: 6px; }
   .settings-panel { padding: 20px 16px; border-radius: 22px; }
   .banger-options { grid-template-columns: 1fr 1fr; }
+  .community-heading { align-items: flex-start; flex-direction: column; }
+  .active-count { align-self: flex-start; }
 }
 
 @media (max-width: 390px) {
@@ -544,6 +639,13 @@ body[data-phase="ready"] .particle-three { animation-delay: -.7s; }
   .settings-heading { align-items: flex-start; flex-direction: column; }
   .sound-toggle { align-self: stretch; }
   .input-row { flex-direction: column; }
+  .vibe-options { grid-template-columns: 1fr 1fr; }
+  .checkin-actions { flex-direction: column; }
+  .checkin-actions .quiet-action { width: 100%; }
+  .feed-heading span { display: none; }
+  .feed-top { grid-template-columns: auto 1fr; }
+  .vibe-badge { grid-column: 2; justify-self: start; }
+  .feed-note, .feed-meta { margin-left: 0; }
   footer span { display: block; margin: 4px 0 0; }
   .clock { display: none; }
   .nickname-dialog form, .info-dialog form { padding: 32px 22px 24px; }

@@ -13,7 +13,13 @@ A one-tap, hands-free heat and cooldown timer. Start the sequence, keep your han
 - Uses a nickname and random local device ID instead of email/password signup
 - Tracks a private session count on the device
 - Includes a beginner-friendly banger-style picker with identification help
+- Shows active heating and cooling sessions in a shared live room
+- Lets users post a post-dab vibe and optional short note to a recent activity feed
 - Works as a lightweight installable web app
+
+## Community safety
+
+The live room is currently intended for private testing. Before public access, add reporting, moderation, rate limiting, and a published community policy for user-written notes.
 
 The included timing values are only starting points. Torch output, material, thickness, and personal setup vary; users should choose timing they already know is safe for their equipment.
 

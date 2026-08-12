@@ -20,6 +20,32 @@ type LocalProfile = {
   bangerType: string;
 };
 
+type CommunityActivity = {
+  nickname: string;
+  phase: "heating" | "cooling";
+  startedAt: number;
+};
+
+type CommunityCheckIn = {
+  id: string;
+  nickname: string;
+  vibe: string;
+  note: string;
+  heatSeconds: number;
+  coolSeconds: number;
+  bangerType: string;
+  createdAt: number;
+};
+
+const vibeLabels: Record<string, string> = {
+  lifted: "I'm lifted",
+  smacked: "That smacked",
+  flavor: "Flavor town",
+  smooth: "Smooth landing",
+  "too-hot": "Too hot",
+  "too-cool": "Too cool",
+};
+
 const bangerTypes = {
   unknown: {
     name: "Not sure yet",
@@ -122,6 +148,42 @@ app.innerHTML = `
 
       <div class="status-line" aria-live="polite" aria-atomic="true" id="status-line">
         Ready when you are
+      </div>
+
+      <form class="checkin-card" id="checkin-form" hidden>
+        <p class="eyebrow">POST-DAB CHECK-IN</p>
+        <h2>How'd it hit?</h2>
+        <div class="vibe-options" role="group" aria-label="Choose your vibe">
+          ${Object.entries(vibeLabels).map(([key, label]) => `<button type="button" data-vibe="${key}" aria-pressed="false">${label}</button>`).join("")}
+        </div>
+        <label class="vibe-note">Say a little more <span>optional · 100 max</span>
+          <textarea id="vibe-note" maxlength="100" placeholder="Damn, that was perfect."></textarea>
+        </label>
+        <div class="checkin-actions">
+          <button class="primary-action" id="share-checkin" type="submit" disabled>Share with the room</button>
+          <button class="quiet-action" id="skip-checkin" type="button">Skip</button>
+        </div>
+        <p class="checkin-message" id="checkin-message" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="community-panel" aria-labelledby="community-title">
+      <div class="community-heading">
+        <div>
+          <p class="eyebrow">THE LIVE ROOM</p>
+          <h2 id="community-title">Someone's always on the clock.</h2>
+        </div>
+        <div class="active-count"><span class="live-pulse" aria-hidden="true"></span><strong id="active-count">0</strong> active now</div>
+      </div>
+      <div class="active-strip" id="active-strip" aria-live="polite">
+        <p class="community-empty">The room is quiet. Start a session and light it up.</p>
+      </div>
+      <div class="feed-heading">
+        <h3>Just landed</h3>
+        <span>live community check-ins</span>
+      </div>
+      <div class="community-feed" id="community-feed">
+        <p class="community-empty">The first check-in is waiting to happen.</p>
       </div>
     </section>
 
@@ -251,6 +313,14 @@ const elements = {
   bangerDialogTitle: document.querySelector<HTMLElement>("#banger-dialog-title")!,
   bangerDialogDescription: document.querySelector<HTMLElement>("#banger-dialog-description")!,
   bangerDialogRecognize: document.querySelector<HTMLElement>("#banger-dialog-recognize")!,
+  checkinForm: document.querySelector<HTMLFormElement>("#checkin-form")!,
+  vibeNote: document.querySelector<HTMLTextAreaElement>("#vibe-note")!,
+  shareCheckin: document.querySelector<HTMLButtonElement>("#share-checkin")!,
+  skipCheckin: document.querySelector<HTMLButtonElement>("#skip-checkin")!,
+  checkinMessage: document.querySelector<HTMLElement>("#checkin-message")!,
+  activeCount: document.querySelector<HTMLElement>("#active-count")!,
+  activeStrip: document.querySelector<HTMLElement>("#active-strip")!,
+  communityFeed: document.querySelector<HTMLElement>("#community-feed")!,
 };
 
 let settings = loadSettings();
@@ -262,6 +332,101 @@ let animationFrame = 0;
 let soundEnabled = true;
 let audioContext: AudioContext | null = null;
 let wakeLock: WakeLockSentinel | null = null;
+let selectedVibe = "";
+let presenceInterval = 0;
+
+async function communityPost(payload: Record<string, unknown>): Promise<boolean> {
+  if (!profile.nickname) return false;
+  try {
+    const response = await fetch("/api/community", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...payload, deviceId: profile.id, nickname: profile.nickname }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function relativeTime(timestamp: number): string {
+  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (seconds < 10) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  return `${Math.floor(minutes / 60)}h ago`;
+}
+
+function makeText(tag: string, className: string, text: string): HTMLElement {
+  const element = document.createElement(tag);
+  element.className = className;
+  element.textContent = text;
+  return element;
+}
+
+function renderCommunity(active: CommunityActivity[], feed: CommunityCheckIn[]): void {
+  elements.activeCount.textContent = active.length.toString();
+  elements.activeStrip.replaceChildren();
+  if (!active.length) {
+    elements.activeStrip.append(makeText("p", "community-empty", "The room is quiet. Start a session and light it up."));
+  } else {
+    active.forEach((session) => {
+      const card = document.createElement("article");
+      card.className = `active-person ${session.phase}`;
+      card.append(makeText("span", "person-avatar", session.nickname.slice(0, 1).toUpperCase()));
+      const copy = document.createElement("div");
+      copy.append(makeText("strong", "", session.nickname), makeText("span", "", session.phase === "heating" ? "Torching now" : "Cooling down"));
+      card.append(copy, makeText("small", "", relativeTime(session.startedAt)));
+      elements.activeStrip.append(card);
+    });
+  }
+
+  elements.communityFeed.replaceChildren();
+  if (!feed.length) {
+    elements.communityFeed.append(makeText("p", "community-empty", "The first check-in is waiting to happen."));
+  } else {
+    feed.forEach((item) => {
+      const card = document.createElement("article");
+      card.className = "feed-card";
+      const top = document.createElement("div");
+      top.className = "feed-top";
+      top.append(makeText("span", "person-avatar", item.nickname.slice(0, 1).toUpperCase()));
+      const identity = document.createElement("div");
+      identity.append(makeText("strong", "", item.nickname), makeText("span", "", relativeTime(item.createdAt)));
+      top.append(identity, makeText("span", `vibe-badge vibe-${item.vibe}`, vibeLabels[item.vibe] ?? "Checked in"));
+      card.append(top);
+      if (item.note) card.append(makeText("p", "feed-note", `“${item.note}”`));
+      card.append(makeText("small", "feed-meta", `${item.heatSeconds}s heat · ${item.coolSeconds}s cool · ${bangerTypes[item.bangerType as keyof typeof bangerTypes]?.name ?? "Custom setup"}`));
+      elements.communityFeed.append(card);
+    });
+  }
+}
+
+async function refreshCommunity(): Promise<void> {
+  try {
+    const response = await fetch("/api/community", { cache: "no-store" });
+    if (!response.ok) return;
+    const data = (await response.json()) as { active?: CommunityActivity[]; feed?: CommunityCheckIn[] };
+    renderCommunity(data.active ?? [], data.feed ?? []);
+  } catch {
+    // The timer remains fully functional if the community service is unavailable.
+  }
+}
+
+function beginPresence(): void {
+  clearInterval(presenceInterval);
+  void communityPost({ action: "presence", phase }).then(() => refreshCommunity());
+  presenceInterval = window.setInterval(() => {
+    if (phase === "heating" || phase === "cooling") void communityPost({ action: "presence", phase });
+  }, 25_000);
+}
+
+function leavePresence(): void {
+  clearInterval(presenceInterval);
+  presenceInterval = 0;
+  void communityPost({ action: "leave" }).then(() => refreshCommunity());
+}
 
 function updateClock(): void {
   const now = new Date();
@@ -359,6 +524,7 @@ function renderStaticState(): void {
   elements.resetAction.hidden = phase === "idle";
 
   if (phase === "idle") {
+    elements.checkinForm.hidden = true;
     elements.phaseKicker.textContent = "SET YOUR SESSION";
     elements.phaseTitle.textContent = "Heat. Cool. Ready.";
     elements.phaseCopy.textContent = "One tap starts the whole sequence.";
@@ -369,6 +535,7 @@ function renderStaticState(): void {
     elements.statusLine.textContent = "Ready when you are";
     elements.timerRing.style.setProperty("--progress", "0");
   } else if (phase === "heating") {
+    elements.checkinForm.hidden = true;
     elements.phaseKicker.textContent = "STEP 1 OF 2";
     elements.phaseTitle.textContent = "Torch now";
     elements.phaseCopy.textContent = "The cooldown begins automatically.";
@@ -377,6 +544,7 @@ function renderStaticState(): void {
     elements.primaryAction.disabled = true;
     elements.statusLine.textContent = `Then cool for ${settings.coolSeconds} seconds`;
   } else if (phase === "cooling") {
+    elements.checkinForm.hidden = true;
     elements.phaseKicker.textContent = "STEP 2 OF 2";
     elements.phaseTitle.textContent = "Cool it down";
     elements.phaseCopy.textContent = "Hands free—the alert is next.";
@@ -394,6 +562,7 @@ function renderStaticState(): void {
     elements.primaryAction.disabled = false;
     elements.statusLine.textContent = "Dab time—your setup is ready";
     elements.timerRing.style.setProperty("--progress", "1");
+    elements.checkinForm.hidden = false;
   }
 }
 
@@ -402,6 +571,7 @@ function beginPhase(nextPhase: "heating" | "cooling"): void {
   durationMs = (nextPhase === "heating" ? settings.heatSeconds : settings.coolSeconds) * 1000;
   deadline = Date.now() + durationMs;
   renderStaticState();
+  beginPresence();
   cancelAnimationFrame(animationFrame);
   animationFrame = requestAnimationFrame(tick);
 }
@@ -424,6 +594,7 @@ function tick(): void {
       playTransitionSound(true);
       navigator.vibrate?.([180, 90, 180, 90, 360]);
       renderStaticState();
+      leavePresence();
       void releaseWakeLock();
     }
     return;
@@ -433,6 +604,11 @@ function tick(): void {
 }
 
 async function startSequence(): Promise<void> {
+  selectedVibe = "";
+  elements.vibeNote.value = "";
+  elements.checkinMessage.textContent = "";
+  elements.shareCheckin.disabled = true;
+  document.querySelectorAll<HTMLButtonElement>("[data-vibe]").forEach((button) => button.setAttribute("aria-pressed", "false"));
   await primeAudio();
   await requestWakeLock();
   beginPhase("heating");
@@ -441,6 +617,7 @@ async function startSequence(): Promise<void> {
 function resetSequence(): void {
   cancelAnimationFrame(animationFrame);
   phase = "idle";
+  leavePresence();
   void releaseWakeLock();
   renderStaticState();
   syncSettings();
@@ -478,6 +655,48 @@ elements.nicknameForm.addEventListener("submit", (event) => {
   persistProfile();
   syncProfile();
   elements.nicknameDialog.close();
+  void refreshCommunity();
+});
+
+document.querySelectorAll<HTMLButtonElement>("[data-vibe]").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedVibe = button.dataset.vibe ?? "";
+    document.querySelectorAll<HTMLButtonElement>("[data-vibe]").forEach((option) => {
+      option.setAttribute("aria-pressed", (option === button).toString());
+    });
+    elements.shareCheckin.disabled = !selectedVibe;
+  });
+});
+
+elements.checkinForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!selectedVibe) return;
+  elements.shareCheckin.disabled = true;
+  elements.checkinMessage.textContent = "Sharing your landing…";
+  const shared = await communityPost({
+    action: "check-in",
+    vibe: selectedVibe,
+    note: elements.vibeNote.value,
+    heatSeconds: settings.heatSeconds,
+    coolSeconds: settings.coolSeconds,
+    bangerType: profile.bangerType,
+  });
+  if (!shared) {
+    elements.checkinMessage.textContent = "The room missed that one. Try again.";
+    elements.shareCheckin.disabled = false;
+    return;
+  }
+  elements.checkinMessage.textContent = "Shared with the room.";
+  elements.checkinForm.classList.add("shared");
+  window.setTimeout(() => {
+    elements.checkinForm.hidden = true;
+    elements.checkinForm.classList.remove("shared");
+  }, 1_100);
+  await refreshCommunity();
+});
+
+elements.skipCheckin.addEventListener("click", () => {
+  elements.checkinForm.hidden = true;
 });
 
 document.querySelectorAll<HTMLButtonElement>("[data-banger]").forEach((button) => {
@@ -552,6 +771,8 @@ setInterval(updateClock, 1_000);
 syncSettings();
 syncProfile();
 renderStaticState();
+void refreshCommunity();
+window.setInterval(() => void refreshCommunity(), 10_000);
 
 if (!profile.nickname) {
   elements.nicknameDialog.showModal();
