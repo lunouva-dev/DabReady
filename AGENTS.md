@@ -13,7 +13,7 @@ This repository is governed by the lunouva-dev organization policy. Read this fi
 
 ### Organization runner boundaries
 
-- Known organization infrastructure includes Windows `shiftway-store` for approved private repositories, macOS `mac-ios-01` for authorized Apple/iOS and TestFlight work, and Linux `lunouva-linux-01` in runner group `lunouva-linux-private` for trusted workloads and Shiftway draft deployments.
+- Organization runner inventory, names, labels, and group access are internal and repository-specific. Do not publish them or infer access from another repository.
 - Do not assign this repository to any runner based on another project’s usage. Inspect this repository’s workflows, repository access, runner-group permissions, and recent Actions results first.
 - Do not expose private network addresses, machine usernames, secrets, SSH keys, tokens, signing credentials, or local filesystem paths in public repositories.
 
